@@ -10,7 +10,7 @@ check <- 0                # Initially, n = 0, 1 -> check = 0
 if (n == 2){check <- 1}
 if (n > 2){
   check <- 1              # n > 2 :  initially, check = 1
-  for (i in 2:(n - 1)){
+  for (i in 2:floor(sqrt(n))){
     if ((n %% i) == 0){
       check <- 0          # i divides n -> n is composite
       break               # find a divisor -> break out of the for loop
