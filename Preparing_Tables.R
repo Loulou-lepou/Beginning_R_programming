@@ -6,6 +6,7 @@
 
 N <- as.integer(readline(prompt = "# candidates :"))
 K <- as.integer(readline(prompt ="The maximum number of candidates per table :"))
+# print(ceiling(N / K))
 if (K <= N & K <= 10^9){
   if (N %% K == 0) {
     print(paste(" minimum number of tables = ", N %/% K))
