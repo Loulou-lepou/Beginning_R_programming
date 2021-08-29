@@ -50,7 +50,7 @@ main <- function()
   n1 <- as.integer(readline(prompt = " N = ")) 
   library(tictoc)
   tic(paste("Running time with n = ", n1, ' is ', collapse = ''))
-  print(sieve.of.eratosthenes.1(1000))
+  print(sieve.of.eratosthenes.1(n1))
   toc()
 }
 
