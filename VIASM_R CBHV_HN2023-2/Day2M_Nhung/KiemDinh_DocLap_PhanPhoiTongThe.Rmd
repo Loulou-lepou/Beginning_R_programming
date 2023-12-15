@@ -1,0 +1,165 @@
+---
+title: "Kiểm định độc lập và phân phối tổng thể trên R"
+author: "Nguyễn Thị Nhung"
+date: "2023-12-10"
+output: html_document
+---
+
+## Kiểm định sự độc lập trên R
+
+Để kiểm chứng tính độc lập trong R, ta dùng hàm ` chisq.test(A)` trong đó A là ma trận chỉ bảng gồm các quan sát của hai thuộc tính cần kiểm định tính độc lập.
+
+Để lập được một ma trận cấp $m\times n$ ta dùng hàm
+		`matrix(x, nrow = m, ncol = n, byrow = FALSE, dimnames = NULL)`, trong đó 
+		
+-  `x` là véc tơ chỉ các phần tử của ma trận;
+
+-  `nrow = m` là tham số chỉ số hàng bằng $m$ của ma trận;
+
+-  `ncol = n` là tham số chỉ số cột bằng $n$ của ma trận;
+
+-  `byrow = FALSE (TRUE)` là tham số chỉ việc sắp xếp các phần tử trong véc tơ x theo cột (hàng) trước, mặc định là `FALSE` tức là theo cột trước;
+		
+#### Bài 1. 
+Một nhà nghiên cứu cho rằng điểm của các học sinh phụ thuộc vào số lượng thời gian chúng nghe nhạc. Một mẫu ngẫu nhiên gồm 400 học sinh được chọn và được xếp lớp chéo giữa điểm trung bình cuối năm với thời gian nghe nhạc hàng tuần như sau:
+
+| Thời gian nghe nhạc |  |  | Điểm trung bình |  |  | Tổng |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+|  | Xuất sắc | Giỏi | Khá | Trung bình | Kém |  |
+| < 5h | 13 | 10 | 11 | 16 | 5 | 55 |
+| 5h-10h | 20 | 27 | 27 | 19 | 2 | 95 |
+| 11h-20h | 9 | 27 | 71 | 16 | 32 | 155 |
+| > 20h | 8 | 11 | 41 | 24 | 11 | 95 |
+| Tổng | 50 | 75 | 150 | 75 | 50 | 400 |
+
+Ở mức ý nghĩa $\alpha = 5\%$, hãy kiểm tra xem điểm trung bình có phụ thuộc vào thời gian nghe nhạc hay không.
+
+#### Lời giải
+Kiểm định cặp giả thuyết
+
+$H_0:$ Không có mối liên hệ giữa thời gian nghe nhạc và kết quả học tập
+
+$H_1:$ Có mối liên hệ giữa thời gian nghe nhạc và kết quả học tập
+
+```{r}
+so_hoc_sinh <- c(13, 20, 9, 8, 10, 27, 27, 11,
+              11, 27, 71, 41, 16, 19, 16, 24,
+              5, 2, 32, 11)
+A <- matrix(so_hoc_sinh, nrow = 4) # tạo ma trận dữ liệu
+A
+chisq.test(A) # Kiểm định độc lập bằng hàm chisq.test
+```
+Do p-giá trị = 4.483e-09 < $\alpha=0.05$ nên ta bác bỏ $H_0$. Vậy tại mức ý nghĩa $\alpha=0.05$, ta có cơ sở thống kê để cho rằng có mối liên hệ giữa thời gian nghe nhạc và kết quả học tập.
+
+#### Bài 5 (Dữ liệu Covid-10 ở Mỹ)
+File `Covid19_USA.csv` thống kê số ca tử vong do Covid-19 ở các bang của Mỹ trong thời gian 1/1/2020 đến 20/11/2021 theo giới tính và số người tử vong. Dưới đây là một số biến chính trong file dữ liệu
+
+`Sex`: Giới tính của bệnh nhân;
+
+`Age.Group`: Nhóm tuổi của bệnh nhân;
+
+`COVID.19.Deaths`: Số lượng tử vong do Covid-19;
+
+`COVID.19.Deaths_factor`: Mức độ tử vong do Covid-19 được mã hóa theo số lượng tử vong như sau: `1: <100`, `2: 100-500`, `500-1000` và `4: > 1000`.
+
+
+```{r}
+# Đọc dữ liệu 
+setwd("D:/Nhung/R/KhoaTapHuanGiangVien/KhoaTapHuanGV2023/TaiLieu/DuLieu")
+df_covid <- read.csv("Covid19_USA.csv")
+```
+1. Tại mức ý nghĩa $\alpha=5\%$, kiểm định xem có mối liên hệ giữa giới tính (Sex) và độ tuổi (Age.Group) không.
+
+Kiểm định cặp giả thuyết:
+
+$H_0:$ Không có sự liên hệ giữa giới tính và độ tuổi
+
+$H_1:$ Có sự liên hệ giữa giới tính và độ tuổi
+
+```{r}
+B <- table(df_covid$Sex, df_covid$Age.Group) # Lập bảng tần số cho hai biến Sex và Age.Group
+B
+chisq.test(B)
+# hoặc
+chisq.test(table(df_covid$Sex, df_covid$Age.Group))
+```
+Do $p-value = 0.989 > \alpha = 0.05$ nên ta không bác bỏ $H_0$. Vậy tại mức ý nghĩa $\alpha=5\%$, ta có cơ sở thống kê để cho rằng Không có sự liên hệ giữa giới tính và độ tuổi.
+
+2. Tại mức ý nghĩa $\alpha=5\%$, kiểm định xem có mối liên hệ giữa độ tuổi (Age.Group) và mức độ tử vong Covid-19 (COVID.19.Deaths\_factor) không.
+
+Kiểm định cặp giả thuyết
+
+$H_0:$ Không có sự liên hệ giữa độ tuổi và mức độ tử vong Covid-19
+
+$H_1:$ Có sự liên hệ giữa độ tuổi và mức độ tử vong Covid-19
+
+```{r}
+chisq.test(table(df_covid$Age.Group, df_covid$COVID.19.Deaths_factor))
+```
+Do $p-value < 2.2e-16 << \alpha=0.05$, nên ta bác bỏ $H_0$. Vậy tại mức ý nghĩa $\alpha=5\%$, ta có cơ sở thống kê để cho rằng có mối liên hệ giữa độ tuổi và mức độ tử vong do Covid-19.
+
+#### Bài 6 (Dữ liệu về nhà trọ ở Nhật)
+
+File `hostel.csv` cho dữ liệu về giá thuê nhà cũng như điểm đánh giá của khách về giá cả và dịch vụ ở một số thành phố của Nhật. Xét xem dữ liệu về điểm đánh giá của khách du lịch (summary_score) có thể lấy từ một tổng thể có phân phối chuẩn không bằng cách thực hiện các thao tác sau.
+```{r}
+# Đọc dữ liệu
+df_hostel <- read.csv('hostel.csv')
+```
+
+1. Vẽ biểu đồ phân phối tần số (histogram), biểu đồ hộp (boxplot), vẽ biểu đồ Q-Q và cho nhận xét.
+
+```{r}
+# Biểu đồ phân phối tần số
+hist(df_hostel$summary_score, col = 'lightblue')
+# Biểu đồ hộp
+boxplot(df_hostel$summary_score, col = 'orange', horizontal = TRUE)
+# Biểu đồ Q-Q
+qqnorm(df_hostel$summary_score)
+```
+
+Biểu đồ phân phối tần số và biểu đồ hộp cho thấy hình dáng của phân phối của tập dữ liệu lệch trái. Biểu đồ Q-Q cho thấy tập điểm không có xu hướng đường thẳng. Do đó tập dữ liệu khó có thể lấy được từ một tổng thể có phân phối chuẩn.
+
+2. Tính những đại lượng thống kê mô tả: trung bình, trung vị, mode, skewness, kurtosis, khoảng biến thiên, độ trải giữa, độ lệch chuẩn, so sánh các đại lượng một cách phù hợp và cho nhận xét.
+
+```{r}
+# Tính trung bình, trung vị, tứ phân vị
+summary(df_hostel$summary_score)
+# Tính mode
+which(table(df_hostel$summary_score) == max(table(df_hostel$summary_score)))
+# Tính độ lệch chuẩn
+sd(df_hostel$summary_score)
+# Tính khoảng biến thiên
+range(df_hostel$summary_score)
+```
+Nhận thấy dữ liệu điểm đánh giá có
+- Trung bình = 8.828, Trung vị = 9 và Mode = 9.1. Các giá trị khá gần nhau, ta khó nhận xét được tính chuẩn của dữ liệu;
+- Độ lệch chuẩn $\sigma=0.91$. Khoảng biến thiên = 10-3.1 = 6.9, độ trải giữa = 9.4-8.6 = 0.8. Ta thấy $6\sigma = 5.46 $ nhỏ hơn tương đối so với khoảng biến thiên và $1.33\sigma = 1.21$ lớn hơn tương đối so với độ trải giữa. Những so sánh này cho thấy nhiều khả năng dữ liệu không lấy từ tổng thể có phân phối chuẩn.
+
+```{r}
+# Tính hệ số Skewness và Kurtosis trong gói moments
+#install.packages("moments")
+library(moments)
+skewness(df_hostel$summary_score)
+kurtosis(df_hostel$summary_score)
+```
+Hệ số skewness=-2.54 khác xa so với 0 và hệ số kurtosis=12 lớn hơn nhiều so với 3. Do đó từ hệ số skewness và kurtosis ta thấy dữ liệu khó chọn từ một tổng thể có phân phối chuẩn.
+
+3. Tại mức ý nghĩa $\alpha=5\%$, dùng các kiểm định Jarque-Bera, Shapiro-Wilk để kiểm tra tính chuẩn của điểm đánh giá.
+
+Kiểm định cặp giả thuyết
+
+$H_0:$ Dữ liệu được chọn từ một tổng thể có phân phối chuẩn
+
+$H_1:$ Dữ liệu không được chọn từ một tổng thể có phân phối chuẩn
+
+Kiểm định Jarque-Bera có thể thực hiện trong R bằng hàm `jarque.test()` trong gói `moments` và kiểm định Shapiro-Wilk bằng hàm shapiro.test() có trong gói cơ bản của R.
+
+```{r}
+library(moments)
+jarque.test(df_hostel$summary_score)
+```
+```{r}
+shapiro.test(df_hostel$summary_score)
+```
+
+Nhận thấy cả hai p-giá trị trong kiểm định Jarque-Bera và Shapiro-Wilk đều < 2.2e-16 < 0.05 nên chúng ta đều đưa ra kết luận bác bỏ $H_0$. Vậy tại mức ý nghĩa $\alpha=5\%$, ta có cơ sở thống kê để cho rằng dữ liệu về điểm đánh giá của khách du lịch không lấy từ một tổng thể tuân theo phân phối chuẩn.

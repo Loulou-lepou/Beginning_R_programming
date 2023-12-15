@@ -1,0 +1,132 @@
+---
+title: "Sơ lược về một số kiểu dữ liệu"
+author: "Tuyet Mai (TMU)"
+format: html
+editor: visual
+---
+
+## 1. **Vector**
+
+Đây là 1 véctơ
+
+```{r}
+c0 <- seq(1:10)
+c0
+```
+
+Tiếp cận từng thành phần của véctơ
+
+```{r}
+c0[1]
+c0[1:3]
+```
+
+Tìm hiều cấu trúc véctơ
+
+```{r}
+str(c0)
+```
+
+Dấu = giống như dấu \<-
+
+```{r}
+DS = c("Huong", "Linh", "Nhung", "Ngoc", "Long", "Binh", "Linh", "Nhung", "Ngoc")
+str(DS)
+length(DS)
+```
+
+```{r}
+DS[2:3] # "Lấy phần thử thứ 2 và thứ 3"
+
+DS[DS == "Linh"] # Chọn các phần tử có tên "Linh"
+
+DS[DS == "Huong"]
+
+```
+
+## 2. **Matrix**
+
+```{r}
+mdat <- matrix(c(1,2,3, 11,12,13), nrow = 2, ncol = 3, byrow = TRUE)
+mdat
+```
+
+```{r}
+?matrix
+```
+
+Tiếp cận phần tử của ma trận
+
+```{r}
+mdat[ 2, 2] # 1 phần từ ở vị trí dòng 2 cột 2
+mdat[ ,2] # Cột 2
+mdat[1, ]# Dòng 1
+mdat[1:2, ] # Dòng 1 và dòng 2
+```
+
+## 2. Data Frames
+
+Ví dụ 1:
+
+```{r}
+mdf <- data.frame(mdat)
+mdf
+```
+
+```{r}
+
+names(mdf) <-  c("C1", "C2", "C3")
+row.names(mdf) <-  c("row1", "row2")
+mdf 
+```
+
+Tiếp cận data.frame
+
+```{r}
+mdf[ ,2]
+mdf[, "C2"]
+mdf[, ]$C2
+```
+
+Ví dụ 2:
+
+```{r}
+mdf2<-data.frame(Ten=c("Huong", "Linh", "Nhung"),Tuoi=c("24","25","26"),Dia_Chi=c("Ha Noi","HCM","Ha Noi"))
+mdf2
+```
+
+```{r}
+mdf2$Ten
+d<-mdf2[mdf2$Ten=="Huong",]
+d
+```
+
+## 3. List
+
+Tạo list từ dữ liệu DS và mdf
+
+```{r}
+list0 <- list(level1 = DS, 
+              level2 =  mdf)
+str(list0)
+```
+
+Tiếp cận list: Vào tầng 1
+
+```{r}
+list0[[1]]
+list0[["level1"]]
+```
+
+```{r}
+str(list0[[1]])
+```
+
+```{r}
+list0[[1]][1:2]
+list0[[1]][list0[[1]] == "Linh"]
+```
+
+```{r}
+list0[[2]][, 2:3]
+```

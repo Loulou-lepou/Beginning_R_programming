@@ -1,0 +1,169 @@
+---
+title: "Linear Regression"
+author: "Dao Binh"
+format: docx
+editor: visual
+---
+
+## Linear Regression
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Mô tả dữ liệu
+
+Tập tin *marketing.csv* dùng để phân tích ảnh hưởng của các hình thức quảng cáo lên doanh thu. Dữ liệu bao gồm 4 biến: $youtube$, $facebook$ và $newspaper$ là số tiền chi cho quảng cáo (Đơn vị: $1000$ usd), và $sales$ là biến doanh thu. MẪu có $200$ quan sát.
+
+**Yêu cầu:** xây dựng mô hình hồi quy bội (multiple regression) để phân tích tác động của các hình thức quảng cáo lên doanh thu và diễn giải kết quả.
+
+Đọc dữ liệu, gán vào data.frame *marketing*:
+
+```{r}
+marketing <- read.csv("marketing.csv", header = T, sep = ";")
+marketing[1:20,] # Hien thi 20 hang dau tien cua bo du lieu 
+```
+
+### 1) Xây dựng mô hình
+
+Mô hình hồi quy bội bao gồm:
+
+-   Biến phụ thuộc: doanh thu $sales$
+-   Biến dư báo (biến độc lập): $youtube$, $facebook$, $newspaper$ lần lượt là số tiền chi cho quảng cáo trên Youtube, Facebook và trên báo chí
+
+**Mô hình được biểu diễn như sau:** $$
+sales = \beta_0 + \beta_1\times youtube + \beta_2\times facebook + \beta_3\times newspaper + \epsilon. 
+$$
+
+Ta có thể vẽ đồ thị phân tán của từng cặp biến để nhận xét mối quan hệ tuyến tính giữa chúng:
+
+```{r}
+par(mfrow = c(1,3))
+plot(marketing$youtube, marketing$sales, pch = 16, col = 'blue', main = "Youtube vs Sales")
+plot(marketing$facebook, marketing$sales, pch = 16, col = 'blue', main = "Facebook vs Sales")
+plot(marketing$newspaper, marketing$sales, pch = 16, col = 'blue', main = "Newspaper vs Sales")
+```
+
+Ta ước lượng các hệ số $\beta_i$, $i=0,\ldots,3$ sử dụng lệnh **lm()**:
+
+```{r}
+model.marketing <- lm(sales ~ youtube + facebook + newspaper, data = marketing)
+summary(model.marketing)
+```
+
+```{r}
+#confint(model.marketing)
+```
+
+Từ kết quả phân tích, ta thu được $\hat \beta_0 = 3.526667$, $\hat\beta_1 = 0.045765$, $\hat\beta_2 = 0.188530$ và $\hat\beta_3 = -0.001037$. Như vậy, đường thẳng hồi quy ước lượng cho bởi phương trình sau:
+
+$$
+\widehat{sales} = 3.526667 + 0.045765\times youtube + 0.188530\times facebook -0.001037\times newspaper.
+$$
+
+### 2) Phân tích kết quả
+
+```{r}
+model2.marketing <- lm(sales ~ youtube + facebook, data = marketing)
+summary(model2.marketing) 
+```
+
+Như vậy, mô hình hồi quy bội về ảnh hưởng của chi phí quảng cáo theo các hình thứ khác nhau (Youtube, Facebook) lên doanh thu được cho bởi:
+
+$$
+\widehat{sales} = 3.50532 + 0.04575\times youtube + 0.18799\times facebook.
+$$ Hệ số $R^2$ hiệu chỉnh bằng $0.8962$ nghĩa là $89.62\%$ sự biến thiên trong doanh thu $sales$ được giải thích bởi các biến $youtube$ và $facebook$ tức là chi phí chi cho việc quảng cáo trên Facebook và Youtube.
+
+Đề tìm khoảng tin cậy cho các hệ số hồi quy, ta sử dụng hàm **confint()**:
+
+```{r}
+confint(model2.marketing)
+```
+
+Khoảng tin cậy $95\%$ cho các hệ số hồi quy cho bởi: $$
+2.808 \le \beta_0 \le 4.202, \\
+0.043 \le \beta_1 \le 0.048, \\
+0.172 \le \beta_2 \le 0.204.
+$$
+
+### 3) Kiểm tra các giả định của mô hình
+
+Nhắc lại các giả định của mô hình hồi quy: $Y_i = \beta_0 + \beta_1X_1 + \cdots + \beta_pX_p + \epsilon_i,\quad i = 1,\ldots, n$
+
+1)  **Tính tuyến tính của dữ liệu:** mối quan hệ giữa biến dự báo $X$ và biến phụ thuộc $Y$ được giả sử là tuyến tính
+2)  **Sai số có phân phối chuẩn**
+3)  **Phương sai của các sai số là hằng số:** $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$
+4)  **Các sai số** $\epsilon_1, \ldots, \epsilon_n$ thì độc lập với nhau
+
+Ta thực hiện phân tích thặng dư để kiểm tra các giả định của mô hình:
+
+```{r}
+par(mfrow = c(2, 2))
+plot(model2.marketing)
+```
+
+```{r}
+plot(model2.marketing, 5)
+```
+
+Để vẽ từng đồ thị, ta dùng các lệnh sau:
+
+```{r}
+plot(model2.marketing, 1)
+```
+
+```{r}
+plot(model2.marketing, 2)
+```
+
+```{r}
+plot(model2.marketing, 3)
+```
+
+```{r}
+plot(model2.marketing, 5)
+```
+
+### 4) Kiểm tra 2 lỗi chính
+
+```{r}
+
+library(AER) # Function vif for multicollinearity
+require(lmtest) # function bptest for heteroskedasticity
+require(texreg) #Export regression output to an MS Word file
+require(stargazer)
+
+```
+
+```{r}
+#Kiểm định đa cộng tuyến vif, kiểm định heteroskesdaticity
+
+vif(model2.marketing )
+
+bptest(model2.marketing)
+#Kiểm định đa cộng tuyến vif, kiểm định heteroskesdaticity
+```
+
+```{r}
+
+op <- par(mfrow = c(2, 2))
+plot(model2.marketing)
+par(op)
+
+
+```
+
+##Xuất kết quả hồi quy cho html hoặc latex
+
+```{r}
+stargazer(model.marketing, model2.marketing, type = "text")
+
+#Xuất kết quả hồi quy trên Word
+wordreg(list(model.marketing , model2.marketing ), 
+        file = "Model2Marketing.doc", single.row = TRUE)
+
+```

@@ -1,0 +1,204 @@
+---
+title: "Một số biểu đồ thông dụng"
+author: "Tuyết Mai - TMU"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Bản soạn này sử dụng chức năng Quarto file trong R ( <https://quarto.org>).
+
+# I. Vẽ biểu đồ với R base
+
+## 1. Đọc dữ liệu Iris
+
+Phần thực hành sẽ sử dụng dữ liệu hoa Iris package datasets trong R.
+
+Dữ liệu hoa Iris là dữ liệu phổ biến dùng để minh họa. Dữ liệu có thông tin về 3 loại hoa Iris và thông số dài/rộng của đài hoa (Sepal) và cánh hoa (Petal)
+
+```{r}
+library(datasets)
+head(iris) # default 6 rows
+tail(iris) # 6 dong cuoi
+str(iris)  #150 obs of 5 variables
+names(iris)
+View(iris)
+```
+
+![](The%20Iris%20Dataset.png)
+
+### Biểu đồ cho biến định tính
+
+Biểu thị thông tin về tần số (frequency)
+
+Cách 1:
+
+```{r}
+table(iris$Species)
+summary(iris$Sepal.Length)
+```
+
+Cách 2:
+
+```{r}
+attach(iris)# ngược lại là #detach(iris)
+table(Species)
+```
+
+```{r}
+par(mfrow=c(1,2)) # chia màn hình vẽ thành 1 dòng + 2 cột
+barplot(table(Species) ) # hình cột
+pie(table(Species)) # hình tròn
+```
+
+### Vẽ biểu đồ histogram
+
+```{r}
+par(mfrow=c(2,2))
+hist(Sepal.Length)
+
+hist(Sepal.Length[Species=='setosa'],
+     xlab = "Sepal Length", # Tên của trục Ox
+     main = "Histogram of setosa",   # Tên của biểu đồ/Caption
+     col = "red") #màu của hình 
+
+hist(Sepal.Length[Species=='versicolor'])
+
+hist(Sepal.Length[Species=='virginica'])
+```
+
+### Vẽ biểu đồ hộp Boxplot
+
+![](1_boxplots.jpg)
+
+```{r}
+boxplot(Sepal.Length) #Vẽ biểu đồ hộp chung cho cả 3 loài hoa
+summary(iris$Sepal.Length)
+
+boxplot(Sepal.Length~Species) # vẽ 3 biểu đồ hộp khác nhau cho từng loài
+```
+
+### Biểu đồ tán xạ
+
+```{r}
+plot(Sepal.Length)
+
+plot(Sepal.Length,Sepal.Width)
+
+plot(Sepal.Length[Species=='setosa'],Sepal.Width[Species=='setosa']) # Giống hình thứ 2 nhưng hạn chế trên hoa setosa
+```
+
+## 2. Mô phỏng dữ liệu
+
+### Phân phối nhị thức
+
+```{r}
+set.seed(19) # Mô phỏng các laptop khác nhau thì kết quả giống nhau
+
+x<- rnorm(1000, 0, 1) 
+
+hist(x, xlim = c(-4, 4))
+```
+
+### Phân phối Poisson
+
+```{r}
+x <- rpois(100, lambda=15)
+
+hist(x)
+```
+
+### Phân phối Student
+
+```{r}
+curve(dt(x, 1), xlim=c(-3,3), ylim=c(0,0.4), col="red", lwd=3)
+
+curve(dt(x, 2), add=T, col="blue", lwd=3)
+
+curve(dt(x, 5), add=T, col="green", lwd=3)
+
+curve(dt(x, 10), add=T, col="orange", lwd=3)
+
+curve(dnorm(x), add=T, lwd=4, lty=3)
+
+title(main="Student T distributions")
+
+legend(par("usr")[2], par("usr")[4],xjust=0.9,
+
+c("df=1", "df=2", "df=5", "df=10", "Std.norm."),
+
+lwd=c(2,2,2,2,2),
+
+lty=c(1,1,1,1,3),
+
+col=c("red", "blue", "green", "orange", par("fg")))
+```
+
+## 3. Dùng biểu đồ Q-Q plot so sánh sự tương đồng giữa các phân phối
+
+```{r}
+#hai phân phối chuẩn
+
+x=rnorm(1000,12,1)
+
+y=rnorm(1000,12,1)
+
+qqplot(x,y)
+abline(coef = c(0,1))
+```
+
+# Vẽ hình với ggplot2
+
+### Gói tidyverse đã bao gồm ggplot2 và nhiều gói khác
+
+```{r}
+require(tidyverse)
+head(iris)
+```
+
+### Biểu đồ tán xạ với ggplot2
+
+```{r}
+plot(Sepal.Length,Sepal.Width)
+
+ggplot(iris, aes(x=Sepal.Length, y = Sepal.Width)) +
+         geom_point(size = 4)
+```
+
+```{r}
+plot(Sepal.Length[Species=='setosa'],Sepal.Width[Species=='setosa'])
+
+ggplot(iris, aes(x=Sepal.Length, y = Sepal.Width, colour  = Species)) +
+         geom_point(size = 4)
+```
+
+### Cần chuyển từ wide table về long table!!
+
+```{r}
+require(reshape2)
+head(iris)
+iris.long <- melt (iris, id.vars = "Species") 
+head(iris.long )
+```
+
+### Boxplot, tương tự như hàm boxplot()
+
+```{r}
+library(ggplot2)
+boxplot(Sepal.Length~Species)
+
+ggplot(iris.long, aes(x=Species, y = value)) +  
+  geom_boxplot() 
+```
+
+### Boxplot by group
+
+```{r}
+ggplot(iris.long, aes(x=Species,
+                      y = value, fill=variable)) +    geom_boxplot()
+head(iris) # Wide table
+head(iris.long) # long table
+
+
+```

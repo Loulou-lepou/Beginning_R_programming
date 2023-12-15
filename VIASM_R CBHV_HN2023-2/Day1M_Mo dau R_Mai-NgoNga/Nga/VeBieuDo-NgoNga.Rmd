@@ -1,0 +1,164 @@
+---
+title: "Một số biểu đồ thông dụng"
+author: "Ngô Thị Thanh Nga -Thang Long University"
+date: "12/2023"
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document: #default
+    latex_engine: xelatex
+---
+# 1. Đọc dữ liệu, vẽ các biểu đồ
+Dữ liệu hoa Iris (hoa Diên Vĩ)
+```{r}
+library(datasets)
+str(iris)
+head(iris)
+```
+Sepal: đài hoa  
+Petal: cánh hoa
+
+Attribute Information:
+1. sepal length in cm: chiều dài đài hoa
+2. sepal width in cm: chiều rộng đài hoa 
+3. petal length in cm: chiều dài cánh hoa 
+4. petal width in cm: chiều rộng cánh hoa 
+5. class: 
+-- Iris Setosa 
+-- Iris Versicolour 
+-- Iris Virginica
+
+# Biểu đồ cho biến định tính
+```{r}
+table(iris$Species)
+attach(iris)
+table(Species)
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+barplot(table(Species))
+pie(table(Species))
+```
+
+# Vẽ biểu đồ histogram 
+```{r}
+names(iris)
+hist(Sepal.Length)
+hist(Sepal.Length[Species=='setosa'])
+hist(Sepal.Length[Species=='versicolor'])
+hist(Sepal.Length[Species=='virginica'])
+```
+#Vẽ biểu đồ hộp
+```{r}
+boxplot(Sepal.Length)
+boxplot(Sepal.Length~Species)
+```
+
+# Biểu đồ tán xạ
+
+```{r}
+plot(Sepal.Length)
+plot(Sepal.Length,Sepal.Width)
+plot(Sepal.Length[Species=='setosa'],Sepal.Width[Species=='setosa'])
+```
+
+
+
+# Dữ liệu đặc biệt kiểu .table
+```{r}
+Titanic
+Titanic.df=as.data.frame(Titanic)
+Titanic.df
+```
+```{r}
+attach(Titanic.df)
+sum(Freq[Class=="1st"])
+sum(Freq[Class=="1st"&Survived=='Yes'])
+```
+
+
+# 2. Mô phỏng dữ liệu 
+## Phân phối nhị thức 
+```{r}
+set.seed(19)
+x<- rbinom(100, 20, 0.5)
+hist(x,xlim=c(0,20))
+```
+# Phân phối Poisson
+```{r}
+x <- rpois(100, lambda=15)
+hist(x)
+```
+# Phân phối mũ
+```{r}
+x<- rexp(150, 0.1)
+par(mfrow=c(1,2))
+hist(x)
+curve(dexp(x,10))
+```
+#Phân phối Chi bình phương
+```{r}
+curve(dchisq(x, 1), xlim=c(0,10), ylim=c(0,0.6), col="red", lwd=3)
+curve(dchisq(x, 2), add=T, col="green", lwd=3)
+curve(dchisq(x, 3), add=T, col="blue", lwd=3)
+curve(dchisq(x, 5), add=T, col="orange", lwd=3)
+abline(h=0, lty=3)
+legend(par("usr")[2], par("usr")[4],
+xjust=1,
+c("df=1", "df=2", "df=3", "df=5"), lwd=3, lty=1,
+col=c("red", "green", "blue", "orange"))
+
+```
+# Phân phối Student
+```{r}
+curve(dt(x, 1), xlim=c(-3,3), ylim=c(0,0.4), col="red", lwd=3)
+curve(dt(x, 2), add=T, col="blue", lwd=3)
+curve(dt(x, 5), add=T, col="green", lwd=3)
+curve(dt(x, 10), add=T, col="orange", lwd=3)
+curve(dnorm(x), add=T, lwd=4, lty=3)
+title(main="Student T distributions")
+legend(par("usr")[2], par("usr")[4],xjust=0.9,
+c("df=1", "df=2", "df=5", "df=10", "Std.norm."),
+lwd=c(2,2,2,2,2),
+lty=c(1,1,1,1,3),
+col=c("red", "blue", "green", "orange", par("fg")))
+```
+#Phân phối Fisher
+```{r}
+curve(df(x,1,1), xlim=c(0,2), ylim=c(0,0.8), lwd=3)
+curve(df(x,3,1), add=T)
+curve(df(x,6,1), add=T, lwd=3)
+curve(df(x,3,3), add=T, col="red")
+curve(df(x,6,3), add=T, col="red", lwd=3)
+curve(df(x,3,6), add=T, col="blue")
+curve(df(x,6,6), add=T, col="blue", lwd=3)
+title(main="Fisher F distributions")
+legend(par("usr")[2], par("usr")[4],
+xjust=1,
+c("df=1,1", "df=3,1", "df=6,1", "df=3,3", "df=6,3",
+"df=3,6", "df=6,6"),
+lwd=c(1,1,3,1,3,1,3),
+lty=c(2,1,1,1,1,1,1),
+col=c(par("fg"), par("fg"), par("fg"), "red", "blue", "blue"))
+```
+#Dùng biểu đồ Q-Q plot so sánh sự tương đồng giữa các phân phối
+```{r}
+#hai phân phối chuẩn
+x=rnorm(1000,12,1)
+y=rnorm(1000,12,1)
+qqplot(x,y)
+```
+#PP chuẩn, PP đều
+```{r}
+x=runif(1000,12,111)
+y=rnorm(1000,12,1)
+qqplot(x,y)
+qqnorm(x)
+qqnorm(y)
+```
+
+
+
