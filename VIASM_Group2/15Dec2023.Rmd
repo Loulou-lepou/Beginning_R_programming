@@ -1,0 +1,1052 @@
+---
+title: "27_May"
+author: "Team 2"
+date: "5/27/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## 1. Introduction to Dataset and Problem Setting
+
+This is a project on modeling Price Prediction for AirBnbs in New York. Data is provided by AirBnbs company and available on https://rpubs.com/SayakChakraborty/NewYorkAirBnB_Modelling. First, we load and overlook through the data.
+
+### A. New York City and Problem
+
+### B. History of Dataset
+
+The Data was provided from Kaggle. In this project we present to you exploratory data analysis, visualizations and modelling of New York Airbnb data. Airbnb, Inc.works on the online serive of connecting the host and the tourists in the most crowded city all over the world, New York. The company earns 3% charge from a host owning a rental homestay and an amount from 6-12% charge from guest booking a room. Airbnb market is successful in New York city (NYC) with more than 48,000 listings in the period of August 2019.
+
+### C. Meaningness of Constructing Useful Prediction Price Models
+
+In this project, we also try to predict the factors that affect the pricing of the airbnbs around New York. This includes creating different kind of models, model specification, transformation, variable selection and many more.
+
+- Data Preparation
+
+- Data Exploration
+
+- Modelling and Model Checking
+
+- Selecting the best Model
+
+- Prediction using the Final Model
+
+## 2. Dataset Overiew
+
+- This section aims at giving a glimpse and brief summary on the dataset and through all variables.
+
+#### A. Glimpse of Dataset
+
+This dataset includes 48895 records/observations with 16 variables. 
+- The summary of the dataset  is shown in the table below.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DT)
+setwd("/Users/macbookpro/PycharmProjects/RProject/VIASM_Group2")
+airbnb_data <- read.csv("DA2-Airbnb-NYC-2019.csv")
+#install.packages("tableone")
+library(tableone)
+```
+
+```{r, include=FALSE}
+# library(tableone)
+# categorical variables
+var1 <- c("neigbourhood_group","neigbourhood","room_type")
+#  variables
+var2 <- c("neigbourhood_group","neigbourhood","room_type","latitude","longitude","price" ,"minimum_nights","number_of_reviews" ,"reviews_per_month","calculated_host_listings_count","availability_365")
+tab2 <- CreateTableOne(vars = var2, data = airbnb_data, factorVars = var1)
+
+
+```
+
+```{r,include=FALSE}
+tab2 <-print( tab2, digits = 2, format = "p")
+write.csv(tab2, file = "tab2.csv")
+```
+
+```{r,echo=FALSE}
+summary_var <- read.csv("tab2.csv")
+
+datatable(summary_var, class = 'cell-border stripe')
+```
+
+The first 10 records of the dataset are given in the following table.
+
+```{r}
+datatable(head(airbnb_data, 10), class = 'cell-border stripe')
+```
+The glimpse of all variables in the dataset with their names and types listed below.
+```{r, include=FALSE}
+library(dplyr)
+glimpse(airbnb_data) # An alternative usage instead of str() function.
+```
+```{r}
+str(airbnb_data)
+```
+
+#### B. Missing Values 
+
+The visualization for the number of missing values of each variables is shown below.
+
+```{r, include=FALSE}
+  #install.packages("naniar")
+  library(naniar)
+  library(ggplot2)
+```
+```{r}
+  gg_miss_var(airbnb_data) +
+  theme_minimal()+
+  labs(y = "Look at all the Missing Values") 
+```
+-Observation: We could also see the NA value on the dataset by the following check. The only variable has NA value is reviews_per_month with 10052 data points missed.
+
+```{r}
+summary(is.na(airbnb_data))
+```
+
+#### C. Variables Summary
+
+The name, data type and meaning of each variable in the dataset could be seen in the following table.
+
+```{r, include=FALSE}
+# library("readxl")
+#install.packages("kableExtra")
+# library("kableExtra")
+```
+
+```{r, include=FALSE}
+# varSumary <- read_excel("variable_summary.xlsx")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+# kable(varSumary) %>%
+#  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F, fixed_thead = T, )
+```
+
+
+## 3. Exploratory Data Analysis
+
+??? Missing contents:  create table , bar chart, pie cahrt (Lecture 27May Mr Ha) for the frequency of room types on whole dataset.
+??? Missing contents: Statistical description on Categorical variables.
+
+#### A. Frequency distribution of the price
+
+The frequency distribution of the price on whole dataset after dropping the outliers is shown below.
+
+```{r,message=FALSE,warning=FALSE}
+Qa <- quantile(airbnb_data$price,.25) - 1.5*IQR(airbnb_data$price)
+Qb <- quantile(airbnb_data$price,.75) + 1.5*IQR(airbnb_data$price)
+airbnb3 <- airbnb_data%>%filter(price>Qa,price<Qb)
+```
+
+```{r,message=FALSE, warning=FALSE}
+hist(airbnb3$price,xlab="price",ylab="Frequency",xlim=c(0,350),breaks=30)
+hist(airbnb3$price,main="Frequency distribution", xlab="price", ylab=" ",probability = T)
+lines(density(airbnb3$price))
+```
+
+The frequency distribution of the price of Brooklyn is shown below.
+?? Missing contents: for other neighbourhood groups.
+
+```{r,include=FALSE}
+Brooklyn_price <- airbnb_data %>% 
+  filter(!(is.na(neighbourhood_group))) %>% 
+  filter(!(neighbourhood_group == "Unknown")) %>% 
+  filter(neighbourhood_group == "Brooklyn")
+
+Staten_price <- airbnb_data %>% 
+  filter(!(is.na(neighbourhood_group))) %>% 
+  filter(!(neighbourhood_group == "Unknown")) %>% 
+  filter(neighbourhood_group == "Staten Island")
+```
+
+```{r}
+
+hist(Brooklyn_price$price,main="Frequency distribution", xlab="price", ylab=" ",probability = T)
+
+```
+
+
+#### B. Room Types Grouped by Borough
+
+The following chart shows the popular listing types available on each Neighbourhood group.
+
+```{r, echo = FALSE, message=FALSE}
+property_df <-  airbnb_data %>% 
+  group_by(neighbourhood_group, room_type) %>% 
+  summarize(Freq = n())
+
+total_property <-  airbnb_data %>% 
+  filter(room_type %in% c("Private room","Entire home/apt","Entire home/apt")) %>% 
+  group_by(neighbourhood_group) %>% 
+  summarize(sum = n())
+
+property_ratio <- merge (property_df, total_property, by="neighbourhood_group")
+
+property_ratio <- property_ratio %>% 
+  mutate(ratio = Freq/sum)
+
+ggplot(property_ratio, aes(x=neighbourhood_group, y = ratio, fill = room_type)) +
+  geom_bar(position = "dodge", stat="identity") + 
+  xlab("Borough") + ylab ("Count") +
+  scale_fill_discrete(name = "Property Type") + 
+  scale_y_continuous(labels = scales::percent) +
+  ggtitle("Listing types in NYC",
+          subtitle = "Count of Listing Type by Borough ") +
+          theme(plot.title = element_text(face = "bold", size = 14) ) +
+          theme(plot.subtitle = element_text(face = "bold", color = "grey35", hjust = 0.5)) +
+          theme(plot.caption = element_text(color = "grey68"))+scale_color_gradient(low="#d3cbcb", high="#852eaa")+
+          scale_fill_manual("Property Type", values=c("#e06f69","#357b8a", "#7db5b8", "#59c6f3", "#f6c458")) +
+          xlab("Neighborhood") + ylab("Percentage")
+```
+
+From the graph, the most popular listing type are private room in all boroughs except Manhattan where it makes nearly 38% in the total room types. The least popular room type is the shared one.
+
+#### C. Mean Price Difference Amongst Neighbourhood Groups
+
+First, we count the number of observations on each neighbourhood group from the dataset dropping outliers, named airbnb3.
+
+```{r,include=FALSE}
+tab_borough <-print( airbnb3 %>% count(neighbourhood_group), digits = 2, format = "p", sort = TRUE)
+write.csv(tab_borough, file = "tab_borough.csv",row.names = FALSE)
+```
+
+```{r,echo=FALSE}
+count_borough <- read.csv("tab_borough.csv")
+
+datatable(count_borough, class = 'cell-border stripe')
+```
+
+- The aggregated chart on price amongst neighbourhood groups also interprets that count for the number of observation corresponding to each group. 
+
+```{r,warning= FALSE,message=FALSE}
+ggplot(airbnb3, aes(x = price,fill = neighbourhood_group, colour = neighbourhood_group)) + 
+  geom_histogram()
+```
+
+The following histogram shows the price frequency corresponding to each neighbourhood group.
+
+```{r,echo=FALSE}
+ggplot(airbnb3, aes(x = price )) + 
+  geom_histogram(colour = "darkblue")+
+  facet_grid(cols = vars(neighbourhood_group))
+```
+- Observation: From this histogram we could see that the major numbers of observations in whole dataset fall in Manhattan, followed by Brooklyn, Queens, Bronx, and then Staten Island. The most frequency price falls within the interval ($30,$180). The highest price appears in Brooklyn other than in Manhattan but the total mean price of Manhattan is higher than that of Brooklyn. This may infer that the major number of host concentrates mostly in Manhattan, but the most luxury listings are in Brooklyn.  
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE} 
+#airbnb_data %>% 
+ # filter(!(is.na(neighbourhood_group))) %>% 
+  #filter(!(neighbourhood_group == "Unknown")) %>% 
+  #group_by(neighbourhood_group) %>% 
+airbnb3%>% group_by(neighbourhood_group) %>%
+  summarise(mean_price = mean(price, na.rm = TRUE)) %>% 
+  ggplot(aes(x = reorder(neighbourhood_group, mean_price), y = mean_price, fill = neighbourhood_group)) +
+  geom_col(stat ="identity", color = "blue", fill="#58acb2") +
+  coord_flip() +
+  theme_gray() +
+  labs(x = "Neighbourhood Group", y = "Price") +
+  geom_text(aes(label = round(mean_price,digit = 2)), hjust = 1.5, color = "white", size = 4) +
+  ggtitle("Mean Price by Neighbourhood Groups", subtitle = "Mean Price comparision between different Neighbourhood Groups") + 
+  xlab("Neighbourhood Group") + 
+  ylab("Mean Price") +
+  theme(legend.position = "none",
+        plot.title = element_text(color = "black", size = 12, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "black", hjust = 0.5),
+        axis.title.y = element_text(),
+        axis.title.x = element_text(),
+        axis.ticks = element_blank())
+```
+
+##### Observation:
+
+- The highest mean price is that of Manhattan, followed by Brooklyn, and Staten Island.
+One reason explains this probably from that these boroughs have high proportion of Entire home/apt which seems to have the highest price among all room types.
+- The lowest mean price is that of Bronx.
+
+##### The tests are conducted on the difference between two means
+
+- We first do the test on the mean price difference between the 2nd class and the 3rd class of the mean price by neighbourhood groups as seen above: the mean price of Brooklyn and that of Staten Island.
+
+```{r,echo=FALSE}
+Brooklyn_price <- airbnb_data %>% 
+  filter(!(is.na(neighbourhood_group))) %>% 
+  filter(!(neighbourhood_group == "Unknown")) %>% 
+  filter(neighbourhood_group == "Brooklyn")
+
+Staten_price <- airbnb_data %>% 
+  filter(!(is.na(neighbourhood_group))) %>% 
+  filter(!(neighbourhood_group == "Unknown")) %>% 
+  filter(neighbourhood_group == "Staten Island")
+```
+
+We start with doing the test on Normality of the price of each Borough on this pair. The var.test() is used to test the homogeneity in the variances of the price for two Boroughs.
+
+```{r,warning=FALSE,message=FALSE}
+ks.test(Brooklyn_price$price,"pnorm")
+ks.test(Staten_price$price,"pnorm")
+var.test(Brooklyn_price$price,Staten_price$price)
+```
+
+##### Hypotheses:
+
+-H0: the mean prices between Brooklyn and Staten Island are equal.
+
+-H1: the mean prices between the two neighbourhood groups are not equal (two sided test).
+  
+```{r}
+t.test(Brooklyn_price$price,Staten_price$price,alternative=c("two.sided"),paired=FALSE)
+```
+
+- Observation: These output tell us that the two mean prices neither are normal nor have the same variances. We do t.test() to test the hypothesis on the difference between two mean price of Brooklyn and Staten Island. The test shows there is not enough evidence to reject the null hypothesis on the difference between two mean price. The mean prices of two boroughs are not significantly shift from 0.
+
+?? Missing contents: Conduct t.test on other pair of Boroughs on their mean price.
+
+##### Visualizing the mean price by neighbourhood groups with the boxplots.
+
+The boxplot below shows the mean prices with respect Borough when the outliers has not been excluded yet.
+
+```{r}
+library(ggplot2)
+
+ggplot(airbnb_data) +
+  aes(x = neighbourhood_group, y = price) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+```
+
+And after excluding the outliers, we get a better vision of the boxplot.
+
+```{r}
+Qa <- quantile(airbnb_data$price,.25) - 1.5*IQR(airbnb_data$price)
+Qb <- quantile(airbnb_data$price,.75) + 1.5*IQR(airbnb_data$price)
+airbnb3 <- airbnb_data%>%filter(price>Qa,price<Qb)
+boxplot(airbnb3$price~airbnb3$neighbourhood_group)
+```
+
+##### Observation:
+
+- From this boxplot, it is clear that the median price of Manhattan is highest with largest interquartile range, followed by Brooklyn and Staten Island. The median price of Bronx is lowest with shortest interquartile range.
+
+#### D. Mean Price Difference Amongest Listing Types
+
+##### The price by neighbourhood groups taking into account of the room types
+
+```{r}
+#library(ggplot2)
+ggplot(airbnb3, aes(x=neighbourhood_group, y=price, fill=room_type)) + 
+  geom_boxplot()
+```
+
+##### Observation:
+
+- From this boxplot, it is clear that Entire home/apt is the most expensive room type in all neighbourhood group. Its interquartile range is also largest. The private room type is in the second rank. The shared room type is cheapest with a shortest interquartile. It is quite evident from the fact that a poorer living condition is normally cheaper and a lower service quality.
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+airbnb_data %>% 
+  filter(!(is.na(room_type))) %>% 
+  filter(!(room_type == "Unknown")) %>% 
+  group_by(room_type) %>% 
+  summarise(mean_price = mean(price, na.rm = TRUE)) %>% 
+  ggplot(aes(x = reorder(room_type, mean_price), y = mean_price, fill = room_type)) +
+  geom_col(stat ="identity", color = "blue", fill="#58acb2") +
+  coord_flip() +
+  theme_gray() +
+  labs(x = "Room Type", y = "Price") +
+  geom_text(aes(label = round(mean_price,digit = 2)), hjust = 1.5, color = "white", size = 4) +
+  ggtitle("Mean Price by Room Types", subtitle = "Mean Price comparision between different Room Types") + 
+  xlab("Room Type") + 
+  ylab("Mean Price") +
+  theme(legend.position = "none",
+        plot.title = element_text(color = "black", size = 14, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "darkblue", hjust = 0.5),
+        axis.title.y = element_text(),
+        axis.title.x = element_text(),
+        axis.ticks = element_blank())
+#install.packages("ggpubr")
+library(ggpubr)
+```
+
+
+The bar chart on the price compared among neighbourhood groups is shown below.
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+airbnb_data %>% 
+  filter(!(is.na(room_type))) %>% 
+  filter(!(room_type == "Unknown")) %>% 
+  group_by(room_type) %>% 
+  summarise(mean_price = mean(price, na.rm = TRUE)) %>% 
+  ggplot(aes(x = reorder(room_type, mean_price), y = mean_price, fill = room_type)) +
+  geom_col(stat ="identity", color = "blue", fill="#58acb2") +
+  coord_flip() +
+  theme_gray() +
+  labs(x = "Room Type", y = "Price") +
+  geom_text(aes(label = round(mean_price,digit = 2)), hjust = 1.5, color = "white", size = 4) +
+  ggtitle("Mean Price by Room Types", subtitle = "Mean Price comparision between different Room Types") + 
+  xlab("Room Type") + 
+  ylab("Mean Price") +
+  theme(legend.position = "none",
+        plot.title = element_text(color = "black", size = 14, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "darkblue", hjust = 0.5),
+        axis.title.y = element_text(),
+        axis.title.x = element_text(),
+        axis.ticks = element_blank())
+```
+
+```{r, include=FALSE}
+counts <- table(airbnb3$room_type)
+barplot(counts, main = "Types of Room", names.arg = c("Entire_home", "Private", "Shared"), horiz = TRUE,
+        col = rainbow(3))
+```
+
+The pie chart on the mean price compared among neighbourhood groups is shown below.
+
+```{r,echo=FALSE}
+labels <- c("Entire_home/apt", "Private_room", "Shared_room")
+pie_percent <- round(100*counts/sum(counts), 2)
+pie(counts, labels = pie_percent, main = "Types of Room",col = rainbow(3))
+legend("topright", labels, cex = 0.8, fill = rainbow(3))
+```
+???
+From Lecture 27 May
+outliers <-boxplot(data$price,plot=F)$out
+length(outliers)
+log(price) to advoid unkewness
+
+
+
+## 4. Model Construction
+
+????
+
+- We are going to use the boxplot to visualize the outliers of the price data.
+- Visualize the skewness using the distribution plot for the price.
+- Visualize the price with bar chart.
+- Use skewness and kurtosis test. ????
+
+```{r,include=FALSE}
+library("tidyr")
+```
+
+#### A. Training and Testing Data Splitting
+
+We remove from the dataset 10% upper price and the same amount of lower price in order to advoid outliers.
+
+```{r,message=FALSE,warning=FALSE}
+airbnb_filtered_data <- airbnb_data %>% 
+  filter(price < quantile(airbnb_data$price, 0.9) & price > quantile(airbnb_data$price, 0.1)) %>% 
+  drop_na()
+```
+
+- We wish to know how well the constructed models behavior on a new data. Therefore, we are going to rule out a portion of data to do the check on the quality of our models performing on new data.
+- Dataset after filtering 10% extreme values of price then is splitted into training and testing dataset with a proportion of 80% and 20% respectively.
+
+
+```{r, message=FALSE, warning=FALSE}
+set.seed(2022)
+
+airbnb_filtered_data <- airbnb_filtered_data %>% mutate(id = row_number())
+
+airbnb_train <- airbnb_filtered_data %>% sample_frac(.8) %>% filter(price > 0)
+
+airbnb_test  <- anti_join(airbnb_filtered_data, airbnb_train, by = 'id') %>% filter(price > 0)
+
+```
+
+#### B. Variable Distribution Testing 
+
+This section is proposed to do the testing on the normality of the dependent variable price and the pairwise correlation between each pair of variables.
+
+??? Missing contents: Correlation analysis
+
+Missing... contents to be completed.
+
+#### C. Meaningful Variables Used to Construct the Price Pridiction Model
+
+- About the unused variables. These variables are shown belows. They will be removed before constructing the models.
+
+```{r,echo=FALSE}
+# unusedVar<-read.csv("unusedVariables.csv")
+# datatable(unusedVar, class = 'cell-border stripe')
+
+```
+
+We are going to construct a prediction model on the price of the airbnbs using the following covariates:
+
+1. neighbourhood_group
+2. latitude
+3. longitude
+4. room_type
+5. minimum_nights
+6. number_of_reviews
+7. reviews_per_month
+8. calculated_host_listings_count
+9. availability_365
+
+We could extract the variable name used to construct our model in the Variable Table in Section 1.C.
+
+```{r,echo=FALSE}
+usedVar<-read.csv("UsedVariables.csv")
+datatable(usedVar, class = 'cell-border stripe')
+```
+
+
+
+#### D. Native Regression Model for the Price Prediction
+
+This model is richest variable model. We use all potential variables to construct our model on the price.
+
+There is the coding procedures for numberizing two categorical variables neigbourhood_group and room_type before constructing models. This is shown as in the following table.
+
+```{r,echo=FALSE}
+coding_borough<-read.csv("coding_borough.csv")
+datatable(coding_borough, class = 'cell-border stripe')
+
+```
+
+```{r,echo=FALSE}
+room_typ<-read.csv("room_type.csv")
+datatable(room_typ, class = 'cell-border stripe')
+
+```
+
+Now, we consider our first regression model.
+
+```{r, message=FALSE,warning=FALSE}
+airbnb_model_1 <- lm (price ~ neighbourhood_group + latitude + longitude + room_type + minimum_nights  + number_of_reviews + reviews_per_month + calculated_host_listings_count +
+                        availability_365, data = airbnb_train)
+```
+
+```{r}
+summary(airbnb_model_1)
+```
+
+The explicit equation model is shown below.
+
+```{r,include=FALSE}
+#----------------Model_equation---------
+library(dplyr)
+
+model_equation <- function(model, ...) {
+  format_args <- list(...)
+  model_coeff <- model$coefficients
+  format_args$x <- abs(model$coefficients)
+  model_coeff_sign <- sign(model_coeff)
+  model_coeff_prefix <- case_when(model_coeff_sign == -1 ~ " - ",
+                                  model_coeff_sign == 1 ~ " + ",
+                                  model_coeff_sign == 0 ~ " + ")
+  model_eqn <- paste(strsplit(as.character(model$call$formula), "~")[[2]], # 'y'
+                     "=",
+                     paste(if_else(model_coeff[1]<0, "- ", ""),
+                           do.call(format, format_args)[1],
+                           paste(model_coeff_prefix[-1],
+                                 do.call(format, format_args)[-1],
+                                 " * ",
+                                 names(model_coeff[-1]),
+                                 sep = "", collapse = ""),
+                           sep = ""))
+  return(model_eqn)
+}
+```
+
+```{r}
+model_equation(airbnb_model_1, digits = 4, trim = TRUE)
+```
+
+The plots of model constructed are shown.
+
+```{r}
+par(mfrow=c(2,2)) 
+plot(airbnb_model_1)
+```
+
+##### Observation: 
+
+Normality is satisfied since a good looking Q-Q plot. However, the Residual vs Fitted plot shows the linearity and constant variance are not very nice. We conduct Kolmogorov-Smirnov test on the normality of the model. The test reject the normal distribution of the residual of the model.
+
+```{r}
+ks.test(residuals(airbnb_model_1),"pnorm")
+```
+
+```{r,warning=FALSE,message=FALSE,echo=FALSE}
+par(mfrow=c(1,2)) 
+hist(residuals(airbnb_model_1),main=paste("Residual dist. of airbnb_model_1"),font.main=8, xlab="residual", ylab=" ",probability = T,sub=paste("Skewness:", round(e1071::skewness(residuals(airbnb_model_1)), 2),", kurtosis:",round(e1071::kurtosis(residuals(airbnb_model_1)),2)))
+    lines(density(residuals(airbnb_model_1)))
+ggqqplot(residuals(airbnb_model_1),main = paste("Q-Q plot of Residual for airbnb_model_1"), font.main =12,col.main ="blue")
+```
+
+- The conducted skewness and kurtosis for the residual of the model have shown in the plot above .
+
+
+#### E. Variable Selection for Better Models
+
+This section aims to construct some model with fewer variables than that of the native model. Some approaches are used to create such models.
+
+##### Best Subset Regression Method
+
+This method using the function regsubsets() to select variables used to construct our model.
+
+
+```{r,include=FALSE}
+library(leaps)
+```
+
+```{r,message=FALSE,warning=FALSE,ec}
+best_fit_model <- regsubsets (price ~ neighbourhood_group + latitude + longitude + room_type + minimum_nights  + number_of_reviews + reviews_per_month +calculated_host_listings_count + availability_365, data = airbnb_train,  nbest = 2, nvmax = 9)
+
+```
+
+```{r,include=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+summary(best_fit_model)
+```
+
+```{r}
+plot(best_fit_model, scale="bic")
+```
+
+- Based on the results, the covariates that we have to select here are:
+1. neighbourhood_group
+2. latitude
+3. longitude
+4. minimum_nights
+5. room_type
+6. availablity_365
+7. calculated_host_listings_count
+The model using the above-mentioned covariates is given as follows.
+
+```{r,warning=FALSE,message=FALSE}
+airbnb_model_3 <- lm(price ~ room_type + neighbourhood_group  + latitude + longitude  + minimum_nights + availability_365 + calculated_host_listings_count , data = airbnb3, nbest = 2, nvmax = 9)
+
+summary(airbnb_model_3)
+```
+
+
+We could use AIC (or equivalent criterion BIC) for the variable seleciton. Smaller AIC (or BIC, respectively), better model. We could also reach a better model using stepwise function in R. The following approaches make use of this idea.
+
+##### AIC Stepwise Variable Selection
+
+ - The AIC (Akaike information criterion):$ AIC=2p-2 ln⁡(likelihood).$
+
+```{r,echo=FALSE, message=FALSE,warning=FALSE}
+null <- lm(price~1, data = airbnb_train)
+full <- lm(price ~ neighbourhood_group + latitude + longitude + room_type + minimum_nights  + number_of_reviews + reviews_per_month +calculated_host_listings_count + availability_365, data = airbnb_train)
+
+step(null, scope =list(lower=null, upper= full), direction = "both")
+```
+
+The resulting model uses the following variables:
+
+price ~ room_type + neighbourhood_group + longitude + 
+    availability_365 + calculated_host_listings_count + minimum_nights + 
+    latitude + number_of_reviews
+    The covariates given by this fit are as follows:
+
+1. room_type
+2. neighbourhood_group
+3. longitude
+4. availability_365
+5. calculated_host_listings_count
+6. minimum_nights
+7. latitude
+8. number_of_reviews
+The model using this covariates is presented below.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+airbnb_model_4 <- lm(price ~ room_type + neighbourhood_group + longitude + availability_365 + calculated_host_listings_count + minimum_nights + latitude + number_of_reviews, 
+                     data = airbnb_train, nbest = 2, nvmax = 9)
+```
+
+##### BIC Stepwise Variable Selection
+
+ - The BIC (Bayesian Information Criterion): $BIC=ln⁡(N)p-2 ln⁡(likelihood)$
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+null <- lm(price~1, data = airbnb_train)
+full <- lm(price ~ neighbourhood_group + latitude + longitude + room_type + minimum_nights  + number_of_reviews + 
+                                 reviews_per_month +calculated_host_listings_count + availability_365, data = airbnb_train)
+
+n=dim(airbnb_train[1])
+step(null, scope =list(lower=null, upper= full), k=log(n), direction = "both")
+```
+
+The covariates given by this fit are as follows:
+
+1. room_type
+2. neighbourhood_group
+3. longitude
+4. availability_365
+5. minimum_nights
+6. calculated_host_listings_count
+7. latitude
+8. number_of_reviews
+9. reviews_per_month
+
+The resulting model is given below.
+
+```{r,include=FALSE}
+airbnb_model_5 <- lm(price ~ room_type + neighbourhood_group + longitude + availability_365 + minimum_nights + latitude + calculated_host_listings_count + 
+                       number_of_reviews + reviews_per_month, data = airbnb_train, nbest = 2, nvmax = 9)
+```
+
+```{r,warning=FALSE,message=FALSE}
+summary(airbnb_model_5)
+```
+
+The histogram and distribution plot for the residual of airbnb_model_5 are shown below.
+
+```{r,echo=FALSE}
+par(mfrow=c(1, 2))  
+hist( x = residuals( airbnb_model_5 ),   # data are the residuals
+       xlab = "Value of residual",      # x-axis label
+       main = "",                       # no title 
+       breaks = 20               )       # lots of breaks
+plot(density(residuals(airbnb_model_5)), main="Density Plot: price", ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(airbnb_train$price), 2),", kurtosis:",round(e1071::kurtosis(airbnb_train$price)),2))
+polygon(density(residuals(airbnb_model_5)), col="red")
+```
+
+The Q-Q plot and the fitted-value plot checking for the normality of the residual of airbnb_model_5 is shown below.
+
+```{r,echo=FALSE}
+
+ggqqplot(residuals(airbnb_model_5),main = paste("Q-Q plot of Residual for airbnb_model_5"), font.main =12,col.main ="blue")
+yhat.2 <- fitted.values( object = airbnb_model_5 )
+ plot( x = yhat.2, 
+       y = airbnb_train$price,
+       xlab = "Fitted Values",
+       ylab = "Observed Values" , main = paste(" Fitted-values between Observations and Prediction for the residual of airbnb_model_5"),col.main = "blue",font.main =6)
+ abline(0,1,col="red")
+```
+```{r}
+
+plot(residuals(airbnb_model_5),sub=paste("Residual vs Observation plot"),col.sub="red")
+  abline(0,0,col="red")
+```
+
+The residual vs each predictor plot of the model is shown below. 
+
+```{r,warning=FALSE,message=FALSE}
+library("car")
+residualPlots(model=airbnb_model_5)
+```
+
+We now do the Kolmogorov-Smirnov test on the normality of the residual on this model.
+
+```{r}
+ks.test(residuals(airbnb_model_5),"pnorm")
+```
+
+The Kolmogorov-Smirnov test shows somewhat the inadequacy on the normal distribution of the residual for the model. This is expected to be improved for a better model in future.
+
+##### Lasso Regression Method
+
+ - Lasso Regression method (Least Absolute Shrinkage and Selection Operator): A statistical and machine learning algorithm for the model variable seletion and regularization in order to enhance the prediction accuracy and interpretability of of the resulting statistical model.
+
+```{r,include=FALSE}
+#install.packages("glmnet")
+library("glmnet")
+
+```
+
+
+```{r, echo=FALSE}
+lasso_fit <- glmnet(x = as.matrix(airbnb_train[, -c(which(colnames(airbnb_train) %in% c("room_type", "neighbourhood_group","price", "name", "host_name", 
+                                                                                        "neighbourhood", "last_review", "host_id", "id")))]), 
+                    y = airbnb_train$price, alpha = 0.5)
+```
+
+```{r,include=FALSE}
+coef(lasso_fit,s = lasso_fit$lambda.min)
+```
+
+The covariates given out by this fit are:
+
+1. latitude
+2. longitude
+3. minimum_nights
+4. number_of_reviews
+5. reviews_per_month
+6. calculated_host_listings_count
+7. availability_365
+
+```{r,echo=FALSE, warning=FALSE}
+airbnb_model_6 <- lm(price ~ latitude + longitude + minimum_nights + number_of_reviews + reviews_per_month + calculated_host_listings_count + availability_365,
+                     data = airbnb_train, nbest = 2, nvmax = 9)
+```
+
+```{r}
+summary(airbnb_model_6)
+```
+
+##### Model on Symmetrization of the Respond
+
+- When mentioning to the symmetrization of the respond by using log function. We could get a symmetric distribution.
+
+```{r}
+log_price <-log(airbnb_filtered_data$price)
+hist(log_price,main="Log price distribution", xlab="log_price", ylab="prob.",xlim=c(3,7),breaks=40,probability = T)
+lines(density(log_price))
+```
+
+We then consider a model constructed based on this transformation.
+
+```{r}
+airbnb_model_2 <- lm(formula = log(price) ~ room_type + neighbourhood_group + longitude + 
+    availability_365 + minimum_nights + latitude + calculated_host_listings_count + 
+    number_of_reviews + reviews_per_month, data = airbnb_train)
+```
+
+```{r,warning=FALSE,message=FALSE,echo=FALSE}
+par(mfrow=c(1,2)) 
+hist(residuals(airbnb_model_2),main="Residual distribution of airbnb_model_2", xlab="residual", ylab=" ",probability = T,sub=paste("Skewness:", round(e1071::skewness(residuals(airbnb_model_2)), 2),", kurtosis:",round(e1071::kurtosis(residuals(airbnb_model_2))),2))
+    lines(density(residuals(airbnb_model_2)))
+ggqqplot(residuals(airbnb_model_2),main = paste("Q-Q plot of Residual for airbnb_model_2"), font.main =12,col.main ="blue")
+```
+
+The histogram and Q-Q plot of the residuals for the model are nice. It is in fact improved from the model airbnb_model_5.
+
+```{r}
+par(mfrow=c(2,2)) 
+plot(airbnb_model_2)
+```
+
+```{r}
+plot(residuals(airbnb_model_2),sub=paste("Residual vs Observation plot of airbnb_model_2"),col.sub="red")
+  abline(0,0,col="red")
+```
+
+The fitted-value plot checking for the normality of the residual of airbnb_model_2 is shown below.
+
+```{r,echo=FALSE}
+
+yhat_2 <- fitted.values( object = airbnb_model_2 )
+ plot( x = yhat_2, 
+       y = airbnb_train$price,
+       xlab = "Fitted Values",
+       ylab = "Observed Values" , main = paste(" Fitted-values between Observations and Prediction for the residual of airbnb_model_2"),col.main = "blue",font.main =6)
+    abline(0,1,col="red")
+```
+
+The residual vs each predictor plot of the model is shown below. 
+
+```{r,warning=FALSE,message=FALSE}
+residualPlots(model=airbnb_model_2)
+```
+
+However, the Kolmogorov - Smirnov test does show a support from rejecting the normality distribution of the residuals of the model.
+
+```{r}
+ks.test(residuals(airbnb_model_2),"pnorm")
+```
+
+- Scatter plot on the linear regression between each numerical predictor and the respond of airbnb_model_2:
+
+```{r}
+scatter.smooth(x=airbnb_filtered_data$longitude,y=log(airbnb_filtered_data$price), main="log(price) ~ longtitude")
+```
+```{r}
+scatter.smooth(x=airbnb_filtered_data$latitude,y=log(airbnb_filtered_data$price), main="log(price) ~ latitude")
+```
+
+```{r}
+scatter.smooth(x=airbnb_filtered_data$availability_365,y=log(airbnb_filtered_data$price), main="log(price) ~ availability_365")
+```
+
+```{r,warning=FALSE,message=FALSE}
+scatter.smooth(x=airbnb_filtered_data$minimum_nights,y=log(airbnb_filtered_data$price), main="log(price) ~ minimum_nights")
+
+```
+```{r,warning=FALSE,message=FALSE}
+scatter.smooth(x=airbnb_filtered_data$calculated_host_listings_count,y=log(airbnb_filtered_data$price), main="log(price) ~ calculated_host_listings_count")
+```
+
+
+
+```{r,warning=FALSE,message=FALSE}
+scatter.smooth(x=airbnb_filtered_data$number_of_reviews,y=log(airbnb_filtered_data$price), main="log(price) ~ number_of_reviews")
+```
+
+```{r,warning=FALSE,message=FALSE}
+
+scatter.smooth(x=airbnb_filtered_data$reviews_per_month,y=log(airbnb_filtered_data$price), main="log(price) ~ reviews_per_month")
+```
+
+
+##### Variable Selection Summary
+
+The following table provides the goodness-of-fit, R squared and Adjusted R squared, Mean Squared Deviation (MSD) of the above-mentioned models. From this, we see that airbnb_model_4 and airbnb_model_5 seems to be good models with high R squared, or adjusted R squared, as well as a low MSD. The model airbnb_model_2 is the best indeed with the small MSD, a high R-squared, Adj-R-squared, as well as F-statistic, especially a smallest AIC (BIC).
+
+```{r,include=FALSE}
+sum_mod1 <- summary(airbnb_model_1) 
+sum_mod2 <- summary(airbnb_model_2)
+sum_mod5 <- summary(airbnb_model_5)
+sum_mod3 <- summary(airbnb_model_3)
+sum_mod4 <- summary(airbnb_model_4)
+sum_mod6 <- summary(airbnb_model_6)
+
+tab_mod1 <- matrix(c(sum_mod1$r.squared,sum_mod1$adj.r.squared,sum_mod1$sigma^2,sum_mod1$fstatistic,round(AIC(airbnb_model_1),2),round(BIC(airbnb_model_1),2),sum_mod2$r.squared,sum_mod2$adj.r.squared,sum_mod2$sigma^2,sum_mod2$fstatistic,round(AIC(airbnb_model_2),2),round(BIC(airbnb_model_2),2),sum_mod3$r.squared,sum_mod3$adj.r.squared,sum_mod3$sigma^2,sum_mod3$fstatistic,round(AIC(airbnb_model_3),2),round(BIC(airbnb_model_3),2),sum_mod4$r.squared,sum_mod4$adj.r.squared,sum_mod4$sigma^2,sum_mod4$fstatistic,round(AIC(airbnb_model_4),2),round(BIC(airbnb_model_4),2),sum_mod5$r.squared,sum_mod5$adj.r.squared,sum_mod5$sigma^2,sum_mod5$fstatistic,round(AIC(airbnb_model_5),2),round(BIC(airbnb_model_5),2),sum_mod6$r.squared,sum_mod6$adj.r.squared,sum_mod6$sigma^2,sum_mod6$fstatistic,round(AIC(airbnb_model_6),2),round(BIC(airbnb_model_6),2)),ncol=6, byrow=FALSE)
+colnames(tab_mod1) <- c('airbnb_model_1','airbnb_model_2','airbnb_model_3','airbnb_model_4','airbnb_model_5','airbnb_model_6')
+rownames(tab_mod1) <- c('R^2','Adj-R^2','MSD','F-stat','numDF','denDF','AIC','BIC')
+tab_mod1_6 <- data.frame(round(tab_mod1, digits =7))
+write.csv(tab_mod1_6, file = "mod1_6.csv")
+
+```
+
+```{r,echo=FALSE}
+tabmod16<-read.csv("mod1_6.csv")
+datatable(tabmod16, class = 'cell-border stripe')
+
+```
+
+ - Anova test on the airbnb_model_4 and airbnb_model_5 to see whether we have a better model when using one more predictor reviews_per_month in the latter comparing to the former.
+ 
+```{r}
+anova(airbnb_model_4,airbnb_model_5)
+```
+
+A non-significant p-value of F-test 0.281 (>significant level 0.05) shows an insufficient clue to reject the hypothesis of an equal performance between two models. The latter does not provides a better performance.
+
+##### The equation of the best model airbnb_model_2 and airbnb_model_5:
+
+```{r,include=FALSE}
+#--------------Skewness-Normality--
+library(e1071)  # for skewness function
+```
+
+These two models can be presented as follows.
+
+```{r}
+model_equation(airbnb_model_2, digits = 4, trim = TRUE)
+```
+
+```{r}
+model_equation(airbnb_model_5, digits = 4, trim = TRUE)
+
+```
+
+- The 95% confident intervals for the coefficients of airbnb_model_2 and airbnb_model_5 are shown below:
+
+```{r,include=FALSE}
+write.csv(print(confint(airbnb_model_5,level=0.95),digit=2,format="p",sort=TRUE),"confint_mod5.csv")
+write.csv(print(confint(airbnb_model_2,level=0.95),digit=2,format="p",sort=TRUE),"confint_mod2.csv")
+```
+
+- For airbnb_model_2:
+
+```{r}
+conf_mod2<-read.csv("confint_mod2.csv")
+datatable(conf_mod2, class = 'cell-border stripe')
+```
+
+ - For airbnb_model_5:
+
+```{r}
+conf_mod5<-read.csv("confint_mod5.csv")
+datatable(conf_mod5, class = 'cell-border stripe')
+```
+
+ 
+##### The correlation accuracy of the models airbnb_model_2 and airbnb_modol_5:
+
+A higher correlation accuracy implies that the actual and predicted values have similar directional movement. This measurement are shown below for both models airbnb_model_2 and airbnb_model_5 respectively. It is not too very high but not too small, and we could trust this somehow. Nearly 70% and 66% of the observation could be predicted by the two models respectively. 
+
+```{r}
+testm5 <- predict(airbnb_model_5, airbnb_test)
+actuals_preds <- data.frame(cbind(actuals=airbnb_test$price, predicteds=testm5)) 
+correlation_accuracy <- cor(actuals_preds) 
+
+testm2 <- predict(airbnb_model_2, airbnb_test)
+actuals_preds2 <- data.frame(cbind(actuals=log(airbnb_test$price), predicteds=testm2)) 
+correlation_accuracy2 <- cor(actuals_preds2)
+
+correlation_accuracy2
+correlation_accuracy
+```
+
+##### Min-max Accuracy and Mean Absolute Percentage Error (MAPE))
+
+- The min-max accuracy, provides the mean of the total proportion of min and max between actual and predicted value.
+The higher value of this, the better model we get. While the mean absolute percentage error, MAPE, tells us the mean of total proportion of the deviation from the actual value of the predicted value of the the model on whole observation. Hence, for MAPE, the smaller, the better. These measurements are shown below for airbnb_model_2 and airbnb_model_5 respectively.
+
+$$
+min\_max\_accuracy = Mean\left(\frac{\min(predicteds,actuals)}{\max(predicteds,actuals)}\right)
+$$
+
+
+```{r}
+min_max_accuracy <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max)) 
+min_max_accuracy2 <- mean(apply(actuals_preds2, 1, min) / apply(actuals_preds2, 1, max)) 
+min_max_accuracy2
+min_max_accuracy
+```
+
+$$
+MAPE = Mean\left(\left|\frac{predicteds-actuals}{actuals}\right|\right)
+$$
+
+```{r}
+mape <- mean(abs((actuals_preds$predicteds - actuals_preds$actuals))/actuals_preds$actuals)
+
+mape2 <- mean(abs((actuals_preds2$predicteds - actuals_preds2$actuals))/actuals_preds2$actuals)
+
+mape2
+mape
+```
+
+We could get error measurements as follows.
+
+```{r}
+DMwR2::regr.eval(actuals_preds2$actuals, actuals_preds2$predicteds)
+DMwR2::regr.eval(actuals_preds$actuals, actuals_preds$predicteds)
+```
+
+#### F. Cross Validation
+
+For the k-folds cross validation, we split the data into k random sample portions. Then construct repeatedly k times the model on a k-1 portions, keeping the last portion k as data test each time. The average of the mean squared error for k times is used to provide an accuracy measurement of the model. So, for a good model, it must fulfill that:
+
+ - These k regression lines from k times seem to have the same slope and level. They are not different too much from each other. They are parallel and as close to each other as possible. 
+ 
+ - These k-fold models' accuracy do not vary too much from each other.
+ 
+- The k-fold cross validation of airbnb_model_5 is shown below:
+
+```{r}
+library(DAAG)
+cvResults <- suppressWarnings(CVlm(data=airbnb_filtered_data, form.lm=airbnb_model_5, m=3, dots=FALSE, seed=29, legend.pos="topleft",  printit=TRUE, main ="5-folds of predicteds vs actuals of airbnb_model_5"))
+attr(cvResults, 'ms') 
+```
+
+- The k-fold cross validation of airbnb_model_2 is shown below:
+
+```{r}
+cvResults2 <- suppressWarnings(CVlm(data=airbnb_filtered_data, form.lm=airbnb_model_2, m=3, dots=FALSE, seed=29, legend.pos="topleft",  printit=TRUE, main ="5-folds of predicteds vs actuals of airbnb_model_2"))
+attr(cvResults2, 'ms') 
+```
+
+The k-fold cross validation method can also be used to visualize the residual of the models. The approach shows its application for these two models respectively as follows.
+
+```{r}
+CVlm(data=airbnb_filtered_data, form.lm=airbnb_model_2,m=3,plotit="Residual")
+
+CVlm(data=airbnb_filtered_data, form.lm=airbnb_model_5,m=3,plotit="Residual")
+```
+```
+
+## 5. Summary of the Project
+
+Conclusion on best model from the previous Section.
+
+```{r}
+model_equation(airbnb_model_2)
+```
+
+ ### Goodness of the models: 
+
+The model airbnb_model_2 is the best model we have from this project. It satisfies the criteria of R-squared, Adj-R-squared, AIC (BIC), and somehow the normality distribution of residual, Min-Max Accuracy, MAPE, and many more. The k-fold cross validation method also performs nicely on this model. Besides, we have the model airbnb_model_5 which also satisfies nicely some criteria. 
+ 
+ ### Weakness of the models and future development
+- Kolmogorov - Smirnor test on the normality checking for the normality of residual are not fulfilled for both models.
+
+- Find other ways of data transformation and different approaches for the variable selection procedure to improve the model
+
+- Use more criteria on checking the model.
+
